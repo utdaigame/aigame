@@ -5,55 +5,255 @@ using UnityEngine;
 
 public class GameModel : MonoBehaviour
 {
+    private static int nextID;
+    private static int nextMindID;
+
+    private static Food[,] foodMap;
+    private static Character[,] characterMap;
+    private static List<Entity> entities;
+    private static List<AIMind> minds;
+
+    private const int WIDTH = 4;
+    private const int HEIGHT = 4;
+
+    public int generateNextID()
+    {
+        int tmp = nextID;
+        nextID++;
+        return tmp;
+    }
+    public int generateNextMindID()
+    {
+        int tmp = nextMindID;
+        nextMindID++;
+        return tmp;
+    }
+
     // enum and structure for accessing character actions
     public enum CharacterAction{MoveNorth, MoveSouth, MoveEast, MoveWest, PickUp, DoNothing};
-    Action<Character>[] actions =
+    public Action<Character>[] actions =
         {
-            (c)=>{ },
-            (c)=>{ },
-            (c)=>{ },
-            (c)=>{ },
-            (c)=>{ },
-            (c)=>{ }
+            //MoveNorth
+            (c)=>
+            {
+                c.stamina -= 0.2;
+                if (c.y < HEIGHT - 1 && characterMap[c.x, c.y + 1] == null)
+                {
+                    characterMap[c.x, c.y] = null;
+                    c.y += 1;
+                    characterMap[c.x, c.y] = c;
+                }
+                c.enforceMMStamina();
+            },
+            //MoveSouth
+            (c)=>
+            {
+                c.stamina -= 0.2;
+                if (c.y > 0 && characterMap[c.x, c.y - 1] == null)
+                {
+                    characterMap[c.x, c.y] = null;
+                    c.y -= 1;
+                    characterMap[c.x, c.y] = c;
+                }
+                c.enforceMMStamina();
+            },
+            //MoveEast
+            (c)=>
+            {
+                c.stamina -= 0.2;
+                if (c.x < WIDTH - 1 && characterMap[c.x + 1, c.y] == null)
+                {
+                    characterMap[c.x, c.y] = null;
+                    c.x += 1;
+                    characterMap[c.x, c.y] = c;
+                }
+                c.enforceMMStamina();
+            },
+            //MoveWest
+            (c)=>
+            {
+                c.stamina -= 0.2;
+                if (c.x > 0 && characterMap[c.x - 1, c.y] == null)
+                {
+                    characterMap[c.x, c.y] = null;
+                    c.x -= 1;
+                    characterMap[c.x, c.y] = c;
+                }
+                c.enforceMMStamina();
+            },
+            //PickUp
+            (c)=>
+            {
+                c.stamina -= 0.15;
+                if (foodMap[c.x, c.y] != null)
+                {
+                    c.stamina += foodMap[c.x, c.y].foodValue;
+                    ///this line generates a warning, because it is called while an enumeration of entities is active. It does not actually break though. 
+                    //entities[foodMap[c.x, c.y].ID] = null;
+                    foodMap[c.x, c.y] = null;
+                }
+                c.enforceMMStamina();
+            },
+            //DoNothing
+            (c)=>
+            {
+                c.stamina -= 0.1;
+                c.enforceMMStamina();
+            }
         };
     
 
-    private abstract class Entity
+    public abstract class Entity
     {
         //ID
-        uint ID;
+        public int ID;
         //Name
-        string name;
+        public string name;
         //Tags
-        string[] tags;
+        public List<string> tags;
+        //Position
+        public int x;
+        public int y;
     }
-    private class Food : Entity
+    public class Food : Entity
     {
         //Food Value
-        double foodValue;
+        public double foodValue;
+
+        public Food(int x, int y, int id)
+        {
+            this.x = x;
+            this.y = y;
+            this.ID = id;
+            this.name = "notaname";
+            this.foodValue = 2.0;
+            this.tags = new List<string> {"Food"};
+        }
+        public Food(int x, int y, int id, string name, double foodValue)
+        {
+            this.x = x;
+            this.y = y;
+            this.ID = id;
+            this.name = name;
+            this.foodValue = foodValue;
+            this.tags = new List<string> { "Food" };
+        }
     }
-    private class Character : Entity
+    public class Character : Entity
     {
         //Mind ID
-        uint mindID;
+        public int mindID;
         //Stamina
-        double stamina;
+        public double stamina;
+        public double maxStamina;
         //Actions
         CharacterAction[] assignedActions;
+
+        public Character(int x, int y, int id, int mindID)
+        {
+            this.x = x;
+            this.y = y;
+            this.ID = id;
+            this.mindID = mindID;
+            this.name = "notaname";
+            this.stamina = 5.0;
+            this.maxStamina = 10.0;
+            this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
+            this.tags = new List<string> { "Character" };
+        }
+        public Character(int x, int y, int id, int mindID, string name)
+        {
+            this.x = x;
+            this.y = y;
+            this.ID = id;
+            this.mindID = mindID;
+            this.name = name;
+            this.stamina = 5.0;
+            this.maxStamina = 10.0;
+            this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
+            this.tags = new List<string> { "Character" };
+        }
+        public Character(int x, int y, int id, int mindID, string name, double startingStamina, double maxStamina, CharacterAction[] actions)
+        {
+            this.x = x;
+            this.y = y;
+            this.ID = id;
+            this.mindID = mindID;
+            this.name = name;
+            this.stamina = startingStamina;
+            this.maxStamina = maxStamina;
+            this.assignedActions = actions;
+            this.tags = new List<string> { "Character" };
+        }
+
+        public void enforceMMStamina()
+        {
+            if (stamina < 0.0) stamina = 0.0;
+            if (stamina > maxStamina) stamina = maxStamina;
+        }
     }
     private abstract class AIMind
     {
         //Mind ID
-        uint mindID;
+        protected int mindID;
+        //Entity ID
+        protected int characterID;
         //get next action
-        protected abstract CharacterAction getNextAction();
+        public abstract CharacterAction getNextAction();
     }
-    private class GreedySearchAIMind
+    private class GreedySearchAIMind : AIMind
     {
-        CharacterAction getNextAction()
+        public GreedySearchAIMind(int mindID, int characterID)
         {
-            // This really need to do something ...
-            return CharacterAction.DoNothing;
+            this.mindID = mindID;
+            this.characterID = characterID;
+        }
+
+        public override CharacterAction getNextAction()
+        {
+            if (foodMap[entities[characterID].x, entities[characterID].y] != null)
+            {
+                return CharacterAction.PickUp;
+            }
+
+            Food closestFood = null;
+            int minManhattanDistance = -1;
+            for (int cx = 0; cx < WIDTH; cx++)
+            {
+                for (int cy = 0; cy < HEIGHT; cy++)
+                {
+                    if (foodMap[cx, cy] != null)
+                    {
+                        int manhattanDistance = Math.Abs(cx - entities[characterID].x) + Math.Abs(cy - entities[characterID].y);
+                        if (closestFood == null || manhattanDistance < minManhattanDistance)
+                        {
+                            closestFood = foodMap[cx, cy];
+                            minManhattanDistance = manhattanDistance;
+                        }
+                    }
+                }
+            }
+
+            if (closestFood == null)
+            {
+                return CharacterAction.DoNothing;
+            }
+            else if (closestFood.x < entities[characterID].x)
+            {
+                return CharacterAction.MoveWest;
+            }
+            else if (closestFood.y < entities[characterID].y)
+            {
+                return CharacterAction.MoveSouth;
+            }
+            else if (closestFood.x > entities[characterID].x)
+            {
+                return CharacterAction.MoveEast;
+            }
+            else
+            {
+                return CharacterAction.MoveNorth;
+            }
         }
     }
     private class SpecialAIMind
@@ -85,12 +285,25 @@ public class GameModel : MonoBehaviour
         }
     }
 
-    private int[,] map = new int[4,4];
-
     // Start is called before the first frame update
     void Start()
     {
-        
+        nextID = 0;
+        nextMindID = 0;
+        characterMap = new Character[WIDTH, HEIGHT];
+        foodMap = new Food[WIDTH, HEIGHT];
+        entities = new List<Entity>();
+        minds = new List<AIMind>();
+
+        int firstEntityID = generateNextID();
+        int firstMindID = generateNextMindID();
+        entities.Insert(firstEntityID, new Character(WIDTH / 2, HEIGHT / 2, firstEntityID, firstMindID, name = "Gree"));
+        minds.Insert(firstMindID, new GreedySearchAIMind(firstMindID, firstEntityID));
+        characterMap[WIDTH / 2, HEIGHT / 2] = (Character) entities[firstEntityID];
+
+        int foodID = generateNextID();
+        entities.Insert(foodID, new Food(1, 0, foodID));
+        foodMap[1, 0] = (Food) entities[foodID];
     }
 
     // FixedUpdate is called once per game frame
@@ -99,14 +312,39 @@ public class GameModel : MonoBehaviour
         
         // temporary display
         string s = "";
-        for (int i = 0; i < map.GetLength(0); i++)
+        for (int i = 0; i < WIDTH; i++)
         {
-            for (int j = 0; j < map.GetLength(1); j++)
+            for (int j = 0; j < HEIGHT; j++)
             {
-                s += map[i, j] + " ";
+                string f = "";
+                if (foodMap[i, j] != null)
+                {
+                    f = foodMap[i, j].foodValue + "";
+                }
+                else
+                {
+                    f = "0";
+                }
+                string c = "";
+                if (characterMap[i, j] != null)
+                {
+                    c = characterMap[i, j].name;
+                }
+                s += f + c + "\t";
             }
             s += "\n";
         }
         Debug.Log(s);
+        foreach (Entity entity in entities)
+        {
+            if (entity != null)
+            {
+                if (entity.tags.Contains("Character"))
+                {
+                    Action<Character> action = actions[(int)minds[((Character)entity).mindID].getNextAction()];
+                    action((Character)entity);
+                }
+            }
+        }
     }
 }
