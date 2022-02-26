@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System;
 using UnityEngine;
 
-public class GameModel : MonoBehaviour
+public partial class GameModel : MonoBehaviour
 {
     private static int nextID;
     private static int nextMindID;
@@ -192,7 +192,7 @@ public class GameModel : MonoBehaviour
             if (stamina > maxStamina) stamina = maxStamina;
         }
     }
-    private abstract class AIMind
+    public abstract class AIMind
     {
         //Mind ID
         protected int mindID;
@@ -256,35 +256,7 @@ public class GameModel : MonoBehaviour
             }
         }
     }
-    private class SpecialAIMind
-    {
-        //thoughts
-        private struct Thought
-        {
-            //character action
-            //next thoughts
-            //weights
-        }
-        //thought priority queue
-
-        //short term memory queue
-        Thought[] memory;
-        //most recent stamina change
-        double staminaChange;
-
-        CharacterAction getNextAction()
-        {
-            CharacterAction pickedAction = CharacterAction.DoNothing;
-            //refill priority queue if needed
-            //pop thought from priority queue
-            //add next thoughts to priority queue
-            //set picked action
-            //trim priority queue
-            //return picked action
-            return pickedAction;
-        }
-    }
-
+    
     // Start is called before the first frame update
     void Start()
     {
