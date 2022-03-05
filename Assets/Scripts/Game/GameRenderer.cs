@@ -37,14 +37,14 @@ public class GameRenderer : MonoBehaviour
             if (entity.tags.Contains("Character"))
             {
                 var _entity = i < entityObjs.Count ? entityObjs[i] : Instantiate(character);
-                _entity.transform.position = new Vector3(entity.x, entity.y, 0);
+                _entity.transform.position = new Vector3(entity.x, 0, entity.y);
                 if (i - 1 < entityObjs.Count)
                     entityObjs.Add(_entity);
             }
             else if (entity.tags.Contains("Food"))
             {
                 var _entity = i < entityObjs.Count ? entityObjs[i] : Instantiate(food);
-                _entity.transform.position = new Vector3(entity.x, entity.y, 0);
+                _entity.transform.position = new Vector3(entity.x, 0, entity.y);
                 if (i - 1 < entityObjs.Count)
                     entityObjs.Add(_entity);
             }
