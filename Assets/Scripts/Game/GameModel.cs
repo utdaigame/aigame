@@ -91,6 +91,7 @@ public partial class GameModel : MonoBehaviour
                 if (foodMap[c.x, c.y] != null)
                 {
                     c.stamina += foodMap[c.x, c.y].foodValue;
+                    foodMap[c.x, c.y].tags.Add("Removed");
                     ///this line generates a warning, because it is called while an enumeration of entities is active. It does not actually break though. 
                     //entities[foodMap[c.x, c.y].ID] = null;
                     foodMap[c.x, c.y] = null;
@@ -286,6 +287,7 @@ public partial class GameModel : MonoBehaviour
     // FixedUpdate is called once per game frame
     void FixedUpdate()
     {
+        tmpDisplay();
         foreach (Entity entity in entities)
         {
             if (entity != null)
@@ -297,7 +299,13 @@ public partial class GameModel : MonoBehaviour
                 }
             }
         }
+        tmpDisplay();
 
+        gameRenderer.MyUpdate(entities);
+    }
+
+    private void tmpDisplay()
+    {
         // temporary display
         string s = "";
         for (int i = 0; i < WIDTH; i++)
@@ -321,9 +329,7 @@ public partial class GameModel : MonoBehaviour
                 s += f + c + "\t";
             }
             s += "\n";
-            Debug.Log(s);
         }
-
-        gameRenderer.MyUpdate(entities);
+        Debug.Log(s);
     }
 }
