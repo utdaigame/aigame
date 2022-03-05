@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using UnityEngine;
 
+[RequireComponent(typeof(GameRenderer))]
 public partial class GameModel : MonoBehaviour
 {
     private static int nextID;
@@ -13,8 +14,10 @@ public partial class GameModel : MonoBehaviour
     private static List<Entity> entities;
     private static List<AIMind> minds;
 
-    private const int WIDTH = 4;
-    private const int HEIGHT = 4;
+    public const int WIDTH = 4;
+    public const int HEIGHT = 4;
+
+    private GameRenderer gameRenderer;
 
     public int generateNextID()
     {
@@ -260,6 +263,8 @@ public partial class GameModel : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        gameRenderer = GetComponent<GameRenderer>();
+
         nextID = 0;
         nextMindID = 0;
         characterMap = new Character[WIDTH, HEIGHT];
@@ -281,7 +286,18 @@ public partial class GameModel : MonoBehaviour
     // FixedUpdate is called once per game frame
     void FixedUpdate()
     {
-        
+        foreach (Entity entity in entities)
+        {
+            if (entity != null)
+            {
+                if (entity.tags.Contains("Character"))
+                {
+                    Action<Character> action = actions[(int)minds[((Character)entity).mindID].getNextAction()];
+                    action((Character)entity);
+                }
+            }
+        }
+
         // temporary display
         string s = "";
         for (int i = 0; i < WIDTH; i++)
@@ -305,18 +321,9 @@ public partial class GameModel : MonoBehaviour
                 s += f + c + "\t";
             }
             s += "\n";
+            Debug.Log(s);
         }
-        Debug.Log(s);
-        foreach (Entity entity in entities)
-        {
-            if (entity != null)
-            {
-                if (entity.tags.Contains("Character"))
-                {
-                    Action<Character> action = actions[(int)minds[((Character)entity).mindID].getNextAction()];
-                    action((Character)entity);
-                }
-            }
-        }
+
+        gameRenderer.MyUpdate(entities);
     }
 }
