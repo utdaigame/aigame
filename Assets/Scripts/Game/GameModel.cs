@@ -13,6 +13,7 @@ public partial class GameModel : MonoBehaviour
     private static Character[,] characterMap;
     private static List<Entity> entities;
     private static List<AIMind> minds;
+    private static List<ActionPair> actionList;
 
     public const int WIDTH = 4;
     public const int HEIGHT = 4;
@@ -105,7 +106,21 @@ public partial class GameModel : MonoBehaviour
                 c.enforceMMStamina();
             }
         };
-    
+
+    public class ActionPair
+    {
+        //Character performing action
+        public string name;
+
+        //Action being performed
+        public string action; 
+
+        //Will display the pair action pair when toString is called
+        public override string ToString()
+        {
+            return "(" + name + ", " + action + ")";
+        }
+    }
 
     public abstract class Entity
     {
@@ -272,6 +287,7 @@ public partial class GameModel : MonoBehaviour
         foodMap = new Food[WIDTH, HEIGHT];
         entities = new List<Entity>();
         minds = new List<AIMind>();
+        actionList = new List<ActionPair>();
 
         int firstEntityID = generateNextID();
         int firstMindID = generateNextMindID();
