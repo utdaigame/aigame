@@ -17,6 +17,11 @@ public partial class GameModel : MonoBehaviour
 
     public const int WIDTH = 4;
     public const int HEIGHT = 4;
+    public const double baseCost = 0.02;
+
+    //random
+    System.Random rand = new System.Random();
+    int frameNumber = 0;
 
     private GameRenderer gameRenderer;
 
@@ -40,7 +45,7 @@ public partial class GameModel : MonoBehaviour
             //MoveNorth
             (c)=>
             {
-                c.stamina -= 0.2;
+                c.stamina -= 0.1 + baseCost;
                 if (c.y < HEIGHT - 1 && characterMap[c.x, c.y + 1] == null)
                 {
                     characterMap[c.x, c.y] = null;
@@ -52,7 +57,7 @@ public partial class GameModel : MonoBehaviour
             //MoveSouth
             (c)=>
             {
-                c.stamina -= 0.2;
+                c.stamina -= 0.1 + baseCost;
                 if (c.y > 0 && characterMap[c.x, c.y - 1] == null)
                 {
                     characterMap[c.x, c.y] = null;
@@ -64,7 +69,7 @@ public partial class GameModel : MonoBehaviour
             //MoveEast
             (c)=>
             {
-                c.stamina -= 0.2;
+                c.stamina -= 0.1 + baseCost;
                 if (c.x < WIDTH - 1 && characterMap[c.x + 1, c.y] == null)
                 {
                     characterMap[c.x, c.y] = null;
@@ -76,7 +81,7 @@ public partial class GameModel : MonoBehaviour
             //MoveWest
             (c)=>
             {
-                c.stamina -= 0.2;
+                c.stamina -= 0.1 + baseCost;
                 if (c.x > 0 && characterMap[c.x - 1, c.y] == null)
                 {
                     characterMap[c.x, c.y] = null;
@@ -88,7 +93,7 @@ public partial class GameModel : MonoBehaviour
             //PickUp
             (c)=>
             {
-                c.stamina -= 0.15;
+                c.stamina -= 0.05 + baseCost;
                 if (foodMap[c.x, c.y] != null)
                 {
                     c.stamina += foodMap[c.x, c.y].foodValue;
@@ -102,7 +107,7 @@ public partial class GameModel : MonoBehaviour
             //DoNothing
             (c)=>
             {
-                c.stamina -= 0.1;
+                c.stamina -= baseCost;
                 c.enforceMMStamina();
             }
         };
@@ -166,7 +171,7 @@ public partial class GameModel : MonoBehaviour
         public double stamina;
         public double maxStamina;
         //Actions
-        CharacterAction[] assignedActions;
+        public CharacterAction[] assignedActions;
 
         public Character(int x, int y, int id, int mindID)
         {
@@ -187,7 +192,7 @@ public partial class GameModel : MonoBehaviour
             this.ID = id;
             this.mindID = mindID;
             this.name = name;
-            this.stamina = 5.0;
+            this.stamina = 10.0;
             this.maxStamina = 10.0;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
             this.tags = new List<string> { "Character" };
@@ -292,7 +297,7 @@ public partial class GameModel : MonoBehaviour
         int firstEntityID = generateNextID();
         int firstMindID = generateNextMindID();
         entities.Insert(firstEntityID, new Character(WIDTH / 2, HEIGHT / 2, firstEntityID, firstMindID, name = "Gree"));
-        minds.Insert(firstMindID, new GreedySearchAIMind(firstMindID, firstEntityID));
+        minds.Insert(firstMindID, new AIMind0(firstMindID, firstEntityID, ((Character) entities[firstEntityID]).assignedActions));
         characterMap[WIDTH / 2, HEIGHT / 2] = (Character) entities[firstEntityID];
 
         int foodID = generateNextID();
@@ -304,12 +309,25 @@ public partial class GameModel : MonoBehaviour
     void FixedUpdate()
     {
         tmpDisplay();
+        frameNumber++;
+        if (frameNumber % 5 == 0)
+        {
+            int nfx = rand.Next(WIDTH);
+            int nfy = rand.Next(HEIGHT);
+            if (foodMap[nfx, nfy] == null)
+            {
+                int foodID = generateNextID();
+                entities.Insert(foodID, new Food(nfx, nfy, foodID));
+                foodMap[nfx, nfy] = (Food)entities[foodID];
+            }
+        }
         foreach (Entity entity in entities)
         {
             if (entity != null)
             {
                 if (entity.tags.Contains("Character"))
                 {
+                    Debug.Log(((Character) entity).stamina);
                     Action<Character> action = actions[(int)minds[((Character)entity).mindID].getNextAction()];
                     action((Character)entity);
                 }
