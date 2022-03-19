@@ -115,15 +115,15 @@ public partial class GameModel : MonoBehaviour
     public class ActionPair
     {
         //Character performing action
-        public string name;
+        public int charID;
 
         //Action being performed
-        public string action; 
+        CharacterAction renderAction;
 
         //Will display the pair action pair when toString is called
         public override string ToString()
         {
-            return "(" + name + ", " + action + ")";
+            return "(" + charID + ", " + renderAction + ")";
         }
     }
 
