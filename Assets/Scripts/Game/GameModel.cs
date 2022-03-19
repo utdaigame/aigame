@@ -13,7 +13,7 @@ public partial class GameModel : MonoBehaviour
     private static Character[,] characterMap;
     private static List<Entity> entities;
     private static List<AIMind> minds;
-    private static List<ActionPair> actionList;
+    private static List<RenderActionPair> actionList;
 
     public const int WIDTH = 4;
     public const int HEIGHT = 4;
@@ -53,6 +53,8 @@ public partial class GameModel : MonoBehaviour
                     characterMap[c.x, c.y] = c;
                 }
                 c.enforceMMStamina();
+                //for rendering
+                actionList.Add(new RenderActionPair(c.ID, RenderAction.Move));
             },
             //MoveSouth
             (c)=>
@@ -65,6 +67,8 @@ public partial class GameModel : MonoBehaviour
                     characterMap[c.x, c.y] = c;
                 }
                 c.enforceMMStamina();
+                //for rendering
+                actionList.Add(new RenderActionPair(c.ID, RenderAction.Move));
             },
             //MoveEast
             (c)=>
@@ -77,6 +81,8 @@ public partial class GameModel : MonoBehaviour
                     characterMap[c.x, c.y] = c;
                 }
                 c.enforceMMStamina();
+                //for rendering
+                actionList.Add(new RenderActionPair(c.ID, RenderAction.Move));
             },
             //MoveWest
             (c)=>
@@ -89,6 +95,8 @@ public partial class GameModel : MonoBehaviour
                     characterMap[c.x, c.y] = c;
                 }
                 c.enforceMMStamina();
+                //for rendering
+                actionList.Add(new RenderActionPair(c.ID, RenderAction.Move));
             },
             //PickUp
             (c)=>
@@ -98,11 +106,15 @@ public partial class GameModel : MonoBehaviour
                 {
                     c.stamina += foodMap[c.x, c.y].foodValue;
                     foodMap[c.x, c.y].tags.Add("Removed");
+                    //for rendering
+                    actionList.Add(new RenderActionPair(foodMap[c.x, c.y].ID, RenderAction.Eaten));
                     ///this line generates a warning, because it is called while an enumeration of entities is active. It does not actually break though. 
                     //entities[foodMap[c.x, c.y].ID] = null;
                     foodMap[c.x, c.y] = null;
                 }
                 c.enforceMMStamina();
+                //for rendering
+                actionList.Add(new RenderActionPair(c.ID, RenderAction.PickUp));
             },
             //DoNothing
             (c)=>
@@ -112,18 +124,25 @@ public partial class GameModel : MonoBehaviour
             }
         };
 
-    public class ActionPair
+    public enum RenderAction{ Move, PickUp, Add, Remove, Eaten }; // <-- Remove is currently unused
+    public class RenderActionPair
     {
         //Character performing action
-        public int charID;
+        public int ID;
 
         //Action being performed
-        CharacterAction renderAction;
+        public RenderAction renderAction;
 
         //Will display the pair action pair when toString is called
         public override string ToString()
         {
-            return "(" + charID + ", " + renderAction + ")";
+            return "(" + ID + ", " + renderAction + ")";
+        }
+
+        public RenderActionPair(int id, RenderAction ra)
+        {
+            ID = id;
+            renderAction = ra;
         }
     }
 
@@ -152,6 +171,8 @@ public partial class GameModel : MonoBehaviour
             this.name = "notaname";
             this.foodValue = 2.0;
             this.tags = new List<string> {"Food"};
+            //for rendering
+            actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
         public Food(int x, int y, int id, string name, double foodValue)
         {
@@ -161,6 +182,8 @@ public partial class GameModel : MonoBehaviour
             this.name = name;
             this.foodValue = foodValue;
             this.tags = new List<string> { "Food" };
+            //for rendering
+            actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
     }
     public class Character : Entity
@@ -184,6 +207,8 @@ public partial class GameModel : MonoBehaviour
             this.maxStamina = 10.0;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
             this.tags = new List<string> { "Character" };
+            //for rendering
+            actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
         public Character(int x, int y, int id, int mindID, string name)
         {
@@ -196,6 +221,8 @@ public partial class GameModel : MonoBehaviour
             this.maxStamina = 10.0;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
             this.tags = new List<string> { "Character" };
+            //for rendering
+            actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
         public Character(int x, int y, int id, int mindID, string name, double startingStamina, double maxStamina, CharacterAction[] actions)
         {
@@ -208,6 +235,8 @@ public partial class GameModel : MonoBehaviour
             this.maxStamina = maxStamina;
             this.assignedActions = actions;
             this.tags = new List<string> { "Character" };
+            //for rendering
+            actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
 
         public void enforceMMStamina()
@@ -292,7 +321,7 @@ public partial class GameModel : MonoBehaviour
         foodMap = new Food[WIDTH, HEIGHT];
         entities = new List<Entity>();
         minds = new List<AIMind>();
-        actionList = new List<ActionPair>();
+        actionList = new List<RenderActionPair>();
 
         int firstEntityID = generateNextID();
         int firstMindID = generateNextMindID();
@@ -336,6 +365,7 @@ public partial class GameModel : MonoBehaviour
         tmpDisplay();
 
         gameRenderer.MyUpdate(entities);
+        actionList.Clear();
     }
 
     private void tmpDisplay()
