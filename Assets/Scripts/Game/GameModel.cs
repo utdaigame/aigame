@@ -364,7 +364,7 @@ public partial class GameModel : MonoBehaviour
         }
         tmpDisplay();
 
-        gameRenderer.MyUpdate(entities);
+        gameRenderer.MyUpdate(entities, actionList);
         actionList.Clear();
     }
 

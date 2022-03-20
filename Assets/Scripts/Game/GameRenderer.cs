@@ -13,7 +13,7 @@ public class GameRenderer : MonoBehaviour
     [SerializeField]
     private GameObject food;
 
-    private List<GameObject> entityObjs = new List<GameObject>{};
+    private Dictionary<int, GameObject> entityObjs = new Dictionary<int, GameObject>{};
 
     public void Start()
     {
@@ -29,28 +29,31 @@ public class GameRenderer : MonoBehaviour
         }
     }
 
-    public void MyUpdate(List<GameModel.Entity> entities)
+    public void MyUpdate(List<GameModel.Entity> entities, List<GameModel.RenderActionPair> actionList)
     {
-        for (int i = 0; i < entities.Count; i++)
-        {
-            var entity = entities[i];
-            if (entity.tags.Contains("Character"))
-            {
-                var _entity = i < entityObjs.Count ? entityObjs[i] : Instantiate(character);
-                _entity.transform.position = new Vector3(entity.x, 0, entity.y);
-                if (i >= entityObjs.Count)
-                    entityObjs.Add(_entity);
-
-                //Debug.Log(_entity.transform.position);
-            }
-            else if (entity.tags.Contains("Food") && !entity.tags.Contains("Removed"))
-            {
-                var _entity = i < entityObjs.Count ? entityObjs[i] : Instantiate(food);
-                _entity.transform.position = new Vector3(entity.x, 0, entity.y);
-                if (i >= entityObjs.Count)
-                    entityObjs.Add(_entity);
-
-                //Debug.Log(_entity.transform.position);
+        foreach (var renderActionPair in actionList) {
+            var id = renderActionPair.ID;
+            var action = renderActionPair.renderAction;
+            var entity = entities[id];
+                //prints each action taken on each frame
+            //Debug.Log(action);
+                //adds model to the render
+            if (action == GameModel.RenderAction.Add) {
+                if (entity.tags.Contains("Character")) {
+                    entityObjs.Add(entity.ID, Instantiate(character));
+                } else if (entity.tags.Contains("Food")) {
+                    entityObjs.Add(entity.ID, Instantiate(food));
+                }
+                    //updates entity position on the render
+                entityObjs[entity.ID].transform.position = new Vector3(entity.x, 0, entity.y); 
+                    //removes entity from the render
+            } else if (action == GameModel.RenderAction.Remove || action == GameModel.RenderAction.Eaten) {
+                Destroy(entityObjs[entity.ID]);
+                entityObjs.Remove(entity.ID);
+                break;
+                    //updates entity position on the render
+            } else if (action == GameModel.RenderAction.Move) {
+                entityObjs[entity.ID].transform.position = new Vector3(entity.x, 0, entity.y);
             }
         }
     }
