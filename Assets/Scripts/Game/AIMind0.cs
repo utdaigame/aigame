@@ -136,7 +136,7 @@ public partial class GameModel
             //create staminaChange based memory associations
             for (int i = 1; i < shortMemory.Length; i++)
             {
-                shortMemory[i].nextThoughts.bump(shortMemory[i - 1], 1.0 * System.Math.Pow(0.5, (double) i - 1.0));
+                shortMemory[i].nextThoughts.bump(shortMemory[i - 1], staminaChange * System.Math.Pow(0.5, (double) i - 1.0));
             }
             
             //refill thought queue

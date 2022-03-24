@@ -15,9 +15,9 @@ public partial class GameModel : MonoBehaviour
     private static List<AIMind> minds;
     private static List<RenderActionPair> actionList;
 
-    public const int WIDTH = 4;
-    public const int HEIGHT = 4;
-    public const double baseCost = 0.02;
+    public const int WIDTH = 8;
+    public const int HEIGHT = 8;
+    public const double baseCost = 0.01;
 
     //random
     System.Random rand = new System.Random();
@@ -325,8 +325,8 @@ public partial class GameModel : MonoBehaviour
 
         int firstEntityID = generateNextID();
         int firstMindID = generateNextMindID();
-        entities.Insert(firstEntityID, new Character(WIDTH / 2, HEIGHT / 2, firstEntityID, firstMindID, name = "Gree"));
-        minds.Insert(firstMindID, new AIMind0(firstMindID, firstEntityID, ((Character) entities[firstEntityID]).assignedActions));
+        entities.Insert(firstEntityID, new Character(WIDTH / 2, HEIGHT / 2, firstEntityID, firstMindID, name = "AI1"));
+        minds.Insert(firstMindID, new AIMind1(firstMindID, firstEntityID, ((Character) entities[firstEntityID]).assignedActions));
         characterMap[WIDTH / 2, HEIGHT / 2] = (Character) entities[firstEntityID];
 
         int foodID = generateNextID();
@@ -337,7 +337,7 @@ public partial class GameModel : MonoBehaviour
     // FixedUpdate is called once per game frame
     void FixedUpdate()
     {
-        tmpDisplay();
+        //tmpDisplay();
         frameNumber++;
         if (frameNumber % 5 == 0)
         {
@@ -356,13 +356,15 @@ public partial class GameModel : MonoBehaviour
             {
                 if (entity.tags.Contains("Character"))
                 {
-                    Debug.Log(((Character) entity).stamina);
-                    Action<Character> action = actions[(int)minds[((Character)entity).mindID].getNextAction()];
+                    Debug.Log("Stamina: " + ((Character) entity).stamina.ToString());
+                    CharacterAction pickedAction = minds[((Character)entity).mindID].getNextAction();
+                    Debug.Log(pickedAction.ToString());
+                    Action<Character> action = actions[(int)pickedAction];
                     action((Character)entity);
                 }
             }
         }
-        tmpDisplay();
+        //tmpDisplay();
 
         gameRenderer.MyUpdate(entities, actionList);
         actionList.Clear();
