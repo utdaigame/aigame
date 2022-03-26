@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using StarterAssets;
 
 public class GameRenderer : MonoBehaviour
 {
@@ -53,7 +54,17 @@ public class GameRenderer : MonoBehaviour
                 break;
                     //updates entity position on the render
             } else if (action == GameModel.RenderAction.Move) {
-                entityObjs[entity.ID].transform.position = new Vector3(entity.x, 0, entity.y);
+
+                var _entity = entityObjs[entity.ID];
+
+                //UnityEngine.Debug.Log(_entity.GetComponent<AIController>().destination);
+                var _destination = _entity.GetComponent<AIController>().destination;
+                _entity.transform.position = new Vector3(_destination.x, 0, _destination.y);
+                _entity.GetComponent<AIController>().destination = new Vector2(entity.x, entity.y);
+                
+
+                UnityEngine.Debug.Log(_entity.GetComponent<AIController>().destination);
+                UnityEngine.Debug.Log(_entity.transform.position);
             }
         }
     }
