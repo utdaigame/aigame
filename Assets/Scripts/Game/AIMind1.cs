@@ -34,7 +34,7 @@ public partial class GameModel
 
             public Thought()
             {
-                nextThoughts.bump(this, -1.0);
+                nextThoughts.bump(this, -0.1);
             }
         }
         //thought priority queue class

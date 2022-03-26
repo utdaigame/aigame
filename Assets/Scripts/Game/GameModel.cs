@@ -19,9 +19,14 @@ public partial class GameModel : MonoBehaviour
     public const int HEIGHT = 8;
     public const double baseCost = 0.01;
 
+    private static int[] iMove = new int[1000];
+    private static int iMoveNum = 0;
+    private static int[] iPickup = new int[1000];
+    private static int iPickupNum = 0;
+
     //random
     System.Random rand = new System.Random();
-    int frameNumber = 0;
+    private static int frameNumber = 0;
 
     private GameRenderer gameRenderer;
 
@@ -52,6 +57,11 @@ public partial class GameModel : MonoBehaviour
                     c.y += 1;
                     characterMap[c.x, c.y] = c;
                 }
+                else
+                {
+                    iMove[frameNumber % 1000] += 1;
+                    iMoveNum++;
+                }
                 c.enforceMMStamina();
                 //for rendering
                 actionList.Add(new RenderActionPair(c.ID, RenderAction.Move));
@@ -65,6 +75,11 @@ public partial class GameModel : MonoBehaviour
                     characterMap[c.x, c.y] = null;
                     c.y -= 1;
                     characterMap[c.x, c.y] = c;
+                }
+                else
+                {
+                    iMove[frameNumber % 1000] += 1;
+                    iMoveNum++;
                 }
                 c.enforceMMStamina();
                 //for rendering
@@ -80,6 +95,11 @@ public partial class GameModel : MonoBehaviour
                     c.x += 1;
                     characterMap[c.x, c.y] = c;
                 }
+                else
+                {
+                    iMove[frameNumber % 1000] += 1;
+                    iMoveNum++;
+                }
                 c.enforceMMStamina();
                 //for rendering
                 actionList.Add(new RenderActionPair(c.ID, RenderAction.Move));
@@ -93,6 +113,11 @@ public partial class GameModel : MonoBehaviour
                     characterMap[c.x, c.y] = null;
                     c.x -= 1;
                     characterMap[c.x, c.y] = c;
+                }
+                else
+                {
+                    iMove[frameNumber % 1000] += 1;
+                    iMoveNum++;
                 }
                 c.enforceMMStamina();
                 //for rendering
@@ -111,6 +136,11 @@ public partial class GameModel : MonoBehaviour
                     ///this line generates a warning, because it is called while an enumeration of entities is active. It does not actually break though. 
                     //entities[foodMap[c.x, c.y].ID] = null;
                     foodMap[c.x, c.y] = null;
+                }
+                else
+                {
+                    iPickup[frameNumber % 1000] += 1;
+                    iPickupNum++;
                 }
                 c.enforceMMStamina();
                 //for rendering
@@ -339,6 +369,10 @@ public partial class GameModel : MonoBehaviour
     {
         //tmpDisplay();
         frameNumber++;
+        iMoveNum -= iMove[frameNumber % 1000];
+        iPickupNum -= iPickup[frameNumber % 1000];
+        iMove[frameNumber % 1000] = 0;
+        iPickup[frameNumber % 1000] = 0;
         if (frameNumber % 5 == 0)
         {
             int nfx = rand.Next(WIDTH);
@@ -358,12 +392,14 @@ public partial class GameModel : MonoBehaviour
                 {
                     Debug.Log("Stamina: " + ((Character) entity).stamina.ToString());
                     CharacterAction pickedAction = minds[((Character)entity).mindID].getNextAction();
-                    Debug.Log(pickedAction.ToString());
+                    //Debug.Log(pickedAction.ToString());
                     Action<Character> action = actions[(int)pickedAction];
                     action((Character)entity);
                 }
             }
         }
+        Debug.Log("Impossible moves attempted in last 1000: " + iMoveNum.ToString());
+        Debug.Log("Impossible pickups attempted in last 1000: " + iPickupNum.ToString());
         //tmpDisplay();
 
         gameRenderer.MyUpdate(entities, actionList);
