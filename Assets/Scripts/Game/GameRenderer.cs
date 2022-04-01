@@ -63,8 +63,8 @@ public class GameRenderer : MonoBehaviour
                 _entity.GetComponent<AIController>().destination = new Vector2(entity.x, entity.y);
                 
 
-                UnityEngine.Debug.Log(_entity.GetComponent<AIController>().destination);
-                UnityEngine.Debug.Log(_entity.transform.position);
+                //UnityEngine.Debug.Log(_entity.GetComponent<AIController>().destination);
+                //UnityEngine.Debug.Log(_entity.transform.position);
             }
         }
     }

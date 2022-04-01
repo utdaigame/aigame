@@ -199,7 +199,7 @@ public partial class GameModel : MonoBehaviour
             this.y = y;
             this.ID = id;
             this.name = "notaname";
-            this.foodValue = 2.0;
+            this.foodValue = 1.0;
             this.tags = new List<string> {"Food"};
             //for rendering
             actionList.Add(new RenderActionPair(id, RenderAction.Add));
@@ -223,6 +223,9 @@ public partial class GameModel : MonoBehaviour
         //Stamina
         public double stamina;
         public double maxStamina;
+        public double lowestStamina;
+        //Senses
+        public double visionRange;
         //Actions
         public CharacterAction[] assignedActions;
 
@@ -233,8 +236,10 @@ public partial class GameModel : MonoBehaviour
             this.ID = id;
             this.mindID = mindID;
             this.name = "notaname";
-            this.stamina = 5.0;
-            this.maxStamina = 10.0;
+            this.stamina = 20.0;
+            this.maxStamina = 20.0;
+            this.lowestStamina = this.stamina;
+            this.visionRange = 1.5;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
             this.tags = new List<string> { "Character" };
             //for rendering
@@ -247,14 +252,16 @@ public partial class GameModel : MonoBehaviour
             this.ID = id;
             this.mindID = mindID;
             this.name = name;
-            this.stamina = 10.0;
-            this.maxStamina = 10.0;
+            this.stamina = 20.0;
+            this.maxStamina = 20.0;
+            this.lowestStamina = this.stamina;
+            this.visionRange = 1.5;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
             this.tags = new List<string> { "Character" };
             //for rendering
             actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
-        public Character(int x, int y, int id, int mindID, string name, double startingStamina, double maxStamina, CharacterAction[] actions)
+        public Character(int x, int y, int id, int mindID, string name, double startingStamina, double maxStamina, double visionRange, CharacterAction[] actions)
         {
             this.x = x;
             this.y = y;
@@ -263,6 +270,8 @@ public partial class GameModel : MonoBehaviour
             this.name = name;
             this.stamina = startingStamina;
             this.maxStamina = maxStamina;
+            this.lowestStamina = this.stamina;
+            this.visionRange = visionRange;
             this.assignedActions = actions;
             this.tags = new List<string> { "Character" };
             //for rendering
@@ -273,6 +282,9 @@ public partial class GameModel : MonoBehaviour
         {
             if (stamina < 0.0) stamina = 0.0;
             if (stamina > maxStamina) stamina = maxStamina;
+
+            //update lowestStamina
+            if (stamina < lowestStamina) lowestStamina = stamina;
         }
     }
     public abstract class AIMind
@@ -300,18 +312,19 @@ public partial class GameModel : MonoBehaviour
             }
 
             Food closestFood = null;
-            int minManhattanDistance = -1;
-            for (int cx = 0; cx < WIDTH; cx++)
+            double minDistance = -1;
+            for (int cx = (int)(-((Character)entities[characterID]).visionRange); (double)cx <= ((Character)entities[characterID]).visionRange; cx++)
             {
-                for (int cy = 0; cy < HEIGHT; cy++)
+                int xsquared = cx * cx;
+                for (int cy = (int)(-((Character)entities[characterID]).visionRange); System.Math.Pow((double)(xsquared + cy * cy), 0.5) <= ((Character)entities[characterID]).visionRange; cy++)
                 {
                     if (foodMap[cx, cy] != null)
                     {
-                        int manhattanDistance = Math.Abs(cx - entities[characterID].x) + Math.Abs(cy - entities[characterID].y);
-                        if (closestFood == null || manhattanDistance < minManhattanDistance)
+                        double distance = Math.Sqrt(Math.Pow(cx - entities[characterID].x, 2.0) + Math.Pow(cy - entities[characterID].y, 2.0));
+                        if (closestFood == null || distance < minDistance)
                         {
                             closestFood = foodMap[cx, cy];
-                            minManhattanDistance = manhattanDistance;
+                            minDistance = distance;
                         }
                     }
                 }
@@ -355,8 +368,8 @@ public partial class GameModel : MonoBehaviour
 
         int firstEntityID = generateNextID();
         int firstMindID = generateNextMindID();
-        entities.Insert(firstEntityID, new Character(WIDTH / 2, HEIGHT / 2, firstEntityID, firstMindID, name = "AI1"));
-        minds.Insert(firstMindID, new AIMind1(firstMindID, firstEntityID, ((Character) entities[firstEntityID]).assignedActions));
+        entities.Insert(firstEntityID, new Character(WIDTH / 2, HEIGHT / 2, firstEntityID, firstMindID, name = "AIM2"));
+        minds.Insert(firstMindID, new AIMind2(firstMindID, firstEntityID, ((Character) entities[firstEntityID]).assignedActions));
         characterMap[WIDTH / 2, HEIGHT / 2] = (Character) entities[firstEntityID];
 
         int foodID = generateNextID();
@@ -391,6 +404,7 @@ public partial class GameModel : MonoBehaviour
                 if (entity.tags.Contains("Character"))
                 {
                     Debug.Log("Stamina: " + ((Character) entity).stamina.ToString());
+                    Debug.Log("Lowest Stamina: " + ((Character) entity).lowestStamina.ToString());
                     CharacterAction pickedAction = minds[((Character)entity).mindID].getNextAction();
                     //Debug.Log(pickedAction.ToString());
                     Action<Character> action = actions[(int)pickedAction];
