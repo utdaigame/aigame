@@ -199,7 +199,7 @@ public partial class GameModel : MonoBehaviour
             this.y = y;
             this.ID = id;
             this.name = "notaname";
-            this.foodValue = 1.0;
+            this.foodValue = 1.5;
             this.tags = new List<string> {"Food"};
             //for rendering
             actionList.Add(new RenderActionPair(id, RenderAction.Add));
@@ -236,8 +236,8 @@ public partial class GameModel : MonoBehaviour
             this.ID = id;
             this.mindID = mindID;
             this.name = "notaname";
-            this.stamina = 20.0;
-            this.maxStamina = 20.0;
+            this.stamina = 50.0;
+            this.maxStamina = 100.0;
             this.lowestStamina = this.stamina;
             this.visionRange = 1.5;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
@@ -252,8 +252,8 @@ public partial class GameModel : MonoBehaviour
             this.ID = id;
             this.mindID = mindID;
             this.name = name;
-            this.stamina = 20.0;
-            this.maxStamina = 20.0;
+            this.stamina = 50.0;
+            this.maxStamina = 100.0;
             this.lowestStamina = this.stamina;
             this.visionRange = 1.5;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
@@ -372,9 +372,11 @@ public partial class GameModel : MonoBehaviour
         minds.Insert(firstMindID, new AIMind2(firstMindID, firstEntityID, ((Character) entities[firstEntityID]).assignedActions));
         characterMap[WIDTH / 2, HEIGHT / 2] = (Character) entities[firstEntityID];
 
-        int foodID = generateNextID();
-        entities.Insert(foodID, new Food(1, 0, foodID));
-        foodMap[1, 0] = (Food) entities[foodID];
+        int entityID = generateNextID();
+        int mindID = generateNextMindID();
+        entities.Insert(entityID, new Character(1, 1, entityID, mindID, name = "AIM2"));
+        minds.Insert(mindID, new AIMind1(mindID, entityID, ((Character)entities[entityID]).assignedActions));
+        characterMap[1, 1] = (Character)entities[entityID];
     }
 
     // FixedUpdate is called once per game frame
