@@ -7,9 +7,9 @@ public partial class GameModel
     private class AIMind2 : AIMind
     {
         //Short Memory Length
-        private const int SML = 20;
-        private const double ADECAY = 0.1;
-        private const double QDECAY = 0.5;
+        private const int SML = 5;
+        private const double ADECAY = 0.01;
+        private const double QDECAY = 0.8;
 
         //random
         System.Random rand = new System.Random();
@@ -171,9 +171,6 @@ public partial class GameModel
             //bump a thought
             public void bump(Thought t, double weight)
             {
-                //decay
-                this.decay(QDECAY);
-
                 if (!thoughtQueue.Contains(t))
                 {
                     //find index of first lower priority thought
@@ -229,7 +226,7 @@ public partial class GameModel
                 return thoughtQueue.Count;
             }
             //reduce all weights by some value between 0-1
-            private void decay(double decayValue)
+            public void decay(double decayValue)
             {
                 if (decayValue <= 0 || decayValue > 1)
                 {
@@ -435,10 +432,10 @@ public partial class GameModel
                                 t1.bump(t0, ataImportanceFactor * staminaChange * System.Math.Pow(0.5, (double)i - 1.0));
                             }
                         }
-                        //else if (t1.rootState != null)
-                        //{
-                        //    t1.bump(t0, stsImportanceFactor * staminaChange * System.Math.Pow(0.5, (double)i - 1.0));
-                        //}
+                        else if (t1.rootState != null)
+                        {
+                            t1.bump(t0, stsImportanceFactor * staminaChange * System.Math.Pow(0.5, (double)i - 1.0));
+                        }
                     }
                 }
             }
@@ -493,6 +490,9 @@ public partial class GameModel
 
             //testing stuff
             Debug.Log("Number of states: " + stateSpace.numberOfStates().ToString());
+
+            //decay anything left in the thought priority queue
+            thoughtQueue.decay(QDECAY);
 
             //return picked action
             return (GameModel.CharacterAction)pickedAction;
