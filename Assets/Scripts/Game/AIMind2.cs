@@ -7,9 +7,10 @@ public partial class GameModel
     private class AIMind2 : AIMind
     {
         //Short Memory Length
-        private const int SML = 5;
+        private const int SML = 3;
         private const double ADECAY = 0.01;
         private const double QDECAY = 0.8;
+        private const int MAX_SECTION_STATES = 100;
 
         //random
         System.Random rand = new System.Random();
@@ -21,9 +22,11 @@ public partial class GameModel
         ThoughtQueue thoughtQueue = new ThoughtQueue(20);
         //short term memory queue
         List<Thought>[] thoughtMemory = new List<Thought>[SML];
-        //most recent stamina change
+        //most recent preference change
+        double preferenceChange = 0.0;
+        double previousPreference;
         double staminaChange = 0.0;
-        double stamina;
+        double previousStamina;
         //short term state memory
         (State, Thought)[] stateMemory = new(State, Thought)[SML];
         //state space
@@ -36,7 +39,7 @@ public partial class GameModel
             //character action
             public GameModel.CharacterAction? action = null;
             //next thoughts
-            public AbsoluteThoughtQueue nextThoughts = new AbsoluteThoughtQueue(10);
+            public AbsoluteThoughtQueue nextThoughts = new AbsoluteThoughtQueue(20);
 
             //previous thoughts for generalization / abstraction
             public List<Thought> previousThoughts = new List<Thought>();
@@ -46,7 +49,7 @@ public partial class GameModel
 
             public Thought()
             {
-                this.bump(this, -0.1);
+                this.bump(this, 0.0);
             }
             public Thought(State rootState)
             {
@@ -248,10 +251,23 @@ public partial class GameModel
             private double visionRadius;
             //access to allThoughts
             private List<Thought> allThoughts;
+            //access to characterID
+            private int characterID;
+            //stamina sections
+            private int numSections = 1;
+            private List<double> sectionDividers = new List<double>();
+            private List<List<State>> sectionStates = new List<List<State>>();
 
-            public State getState(Entity entity, Food[,] foodMap)
+            public State getState(Entity entity, Food[,] foodMap, double previousPreference)
             {
                 List<int> listState = new List<int>();
+
+                //stamina based state information
+                double staminaValue = ((Character)entity).stamina;
+                int sectionNum = numSections - 1;
+                listState.Add(sectionNum);
+
+                //vision based state information
                 for (int x = (int)(-visionRadius); (double)x <= visionRadius; x++)
                 {
                     int xsquared = x * x;
@@ -279,7 +295,7 @@ public partial class GameModel
                 foreach (State state in allStates)
                 {
                     bool equal = true;
-                    for (int i = 0; i < listState.Count; i++)
+                    for (int i = 1; i < listState.Count; i++)
                     {
                         if (listState[i] != state.stateItems[i])
                         {
@@ -287,21 +303,46 @@ public partial class GameModel
                             break;
                         }
                     }
-                    if (equal)
+                    if (equal && staminaValue < 1.10 * state.stamina && staminaValue > 0.80 * state.stamina)
                     {
+                        double staminaChange = staminaValue - state.stamina;
+                        state.stamina += 0.9 * staminaChange;
+                        state.preference += staminaChange;
+                        for (int i = 0; i < sectionDividers.Count; i++)
+                        {
+                            if (state.stamina < sectionDividers[i])
+                            {
+                                sectionNum = i;
+                                break;
+                            }
+                        }
+                        int oldSectionNum = state.stateItems[0];
+                        sectionStates[oldSectionNum].Remove(state);
+                        state.stateItems[0] = sectionNum;
+                        sectionStates[sectionNum].Add(state);
+                        this.enforceSectionSize(sectionNum);
+                        this.enforceSectionSize(oldSectionNum);
                         return state;
                     }
                 }
-                State newState = new State(listState, allThoughts);
-                allStates.Add(newState);
-                int currentCount = allStates.Count;
-                for (int i = 0; i < currentCount && i < 10; i++)
+                for (int i = 0; i < sectionDividers.Count; i++)
                 {
-                    getOverlapState(newState, allStates[i]);
+                    if (staminaValue < sectionDividers[i])
+                    {
+                        sectionNum = i;
+                        break;
+                    }
                 }
+                listState[0] = sectionNum;
+                State newState = new State(listState, allThoughts, (previousPreference + staminaValue) / 2, staminaValue);
+                allStates.Add(newState);
+                sectionStates[sectionNum].Add(newState);
+                this.enforceSectionSize(sectionNum);
+                int currentCount = allStates.Count;
                 return newState;
             }
 
+            //currently unused
             public State getOverlapState(State state1, State state2)
             {
                 List<int> listState = new List<int>();
@@ -351,20 +392,94 @@ public partial class GameModel
                         return state;
                     }
                 }
-                State newState = new State(listState, allThoughts);
+                State newState = new State(listState, allThoughts, ((Character)entities[characterID]).stamina / ((Character)entities[characterID]).maxStamina, ((Character)entities[characterID]).stamina);
                 allStates.Add(newState);
                 return newState;
             }
 
-            public StateSpace(double visionRadius, List<Thought> allThoughts)
+            private void enforceSectionSize(int sectionNum)
+            {
+                if (sectionStates[sectionNum].Count >= MAX_SECTION_STATES)
+                {
+                    sectionStates.Insert(sectionNum, new List<State>());
+                    if (sectionNum == 0)
+                    {
+                        if (sectionNum == numSections - 1)
+                        {
+                            sectionDividers.Add((((Character)entities[characterID]).minStamina + ((Character)entities[characterID]).maxStamina) / 2);
+                        }
+                        else
+                        {
+                            sectionDividers.Insert(sectionNum, (((Character)entities[characterID]).minStamina + sectionDividers[sectionNum]) / 2);
+                        }
+                    }
+                    else if (sectionNum == numSections - 1)
+                    {
+                        sectionDividers.Add((sectionDividers[sectionNum - 1] + ((Character)entities[characterID]).maxStamina) / 2);
+                    }
+                    else
+                    {
+                        sectionDividers.Insert(sectionNum, (sectionDividers[sectionNum - 1] + sectionDividers[sectionNum]) / 2);
+                    }
+                    numSections++;
+                    int i = 0;
+                    while (i < sectionStates[sectionNum + 1].Count)
+                    {
+                        if (sectionStates[sectionNum + 1][i].stamina < sectionDividers[sectionNum])
+                        {
+                            sectionStates[sectionNum].Add(sectionStates[sectionNum + 1][i]);
+                            sectionStates[sectionNum + 1].RemoveAt(i);
+                        }
+                        else
+                        {
+                            i++;
+                        }
+                    }
+                    increaseStaminaSectionNumbers(sectionNum + 1);
+                }
+                else if (sectionStates[sectionNum].Count == 0)
+                {
+                    if (sectionNum == numSections - 1)
+                    {
+                        sectionDividers.RemoveAt(sectionNum - 1);
+                    }
+                    else
+                    {
+                        sectionDividers.RemoveAt(sectionNum);
+                    }
+                    sectionStates.RemoveAt(sectionNum);
+                    numSections--;
+                }
+            }
+
+            private void increaseStaminaSectionNumbers(int sectionNum)
+            {
+                while (sectionNum < numSections)
+                {
+                    foreach (State state in sectionStates[sectionNum])
+                    {
+                        state.stateItems[0] = sectionNum;
+                    }
+                    sectionNum++;
+                }
+            }
+
+            public StateSpace(double visionRadius, List<Thought> allThoughts, int characterID)
             {
                 this.visionRadius = visionRadius;
                 this.allThoughts = allThoughts;
+                this.sectionStates.Add(new List<State>());
+                this.characterID = characterID;
             }
 
             public int numberOfStates()
             {
                 return allStates.Count;
+            }
+
+            public int numberOfSections()
+            {
+                return numSections;
             }
         }
 
@@ -375,12 +490,135 @@ public partial class GameModel
             public List<int> stateItems;
             //next thoughts
             public List<Thought> thoughts = new List<Thought>();
+            //preference
+            public double preference;
+            //psuedo average stamina
+            public double stamina;
+            //stsTransform
+            public StsTransform stsTransform;
 
-            public State(List<int> listState, List<Thought> allThoughts)
+            public State(List<int> listState, List<Thought> allThoughts, double preference, double stamina)
             {
                 stateItems = listState;
+
                 thoughts.Add(new Thought(this));
                 allThoughts.Add(thoughts[0]);
+
+                this.preference = preference;
+
+                this.stamina = stamina;
+
+                this.stsTransform = new StsTransform(this);
+            }
+        }
+
+
+        private class StsTransform
+        {
+            private State startState;
+            private List<List<(State, double)>> transform; //warning, these indexes are currently not consistent between different StsTransforms
+            private List<Thought> triggers;
+
+            public StsTransform(State startState)
+            {
+                this.startState = startState;
+                this.transform = new List<List<(State, double)>>();
+                this.triggers = new List<Thought>();
+            }
+
+            public void addTransform(Thought triggerThought, State triggeredState, double value)
+            {
+                int indexa = triggers.IndexOf(triggerThought);
+                if (indexa == -1)
+                {
+                    //this piece is where the indexes could be made consistent by comparing to actionThoughts' indexing
+                    indexa = transform.Count;
+                    triggers.Add(triggerThought);
+                    transform.Add(new List<(State, double)>());
+                }
+                List<(State, double)> stateList = transform[indexa];
+                int indexs = StsTransform.indexOfStatePair(stateList, triggeredState);
+                if (indexs == -1)
+                {
+                    indexs = stateList.Count;
+                    stateList.Add((triggeredState, 0.0));
+                }
+                stateList[indexs] = (stateList[indexs].Item1, stateList[indexs].Item2 + value);
+            }
+
+            private static int indexOfStatePair(List<(State, double)> stateList, State state)
+            {
+                for (int i = 0; i < stateList.Count; i++)
+                {
+                    if (state == stateList[i].Item1)
+                    {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+
+            public (Thought, double) getBestThought(int maxTraversalSteps = 100)
+            {
+                (Thought thought, double support, int cs) = this.getBestThoughtInternal(maxTraversalSteps, 0);
+                return (thought, support);
+            }
+
+            private (Thought, double, int) getBestThoughtInternal(int maxTraversalSteps = 100, int currentStep = 0)
+            {
+                if (currentStep >= maxTraversalSteps)
+                {
+                    return (null, 0, currentStep);
+                }
+                Thought thought = null;
+                double support = 0.0;
+                List<(Thought, State, double)> nextTransforms = new List<(Thought, State, double)>();
+                int indexa = 0;
+                int indexs = 0;
+                while (currentStep < maxTraversalSteps && indexa < this.triggers.Count)
+                {
+                    if (indexs < transform[indexa].Count)
+                    {
+                        nextTransforms.Add((triggers[indexa], transform[indexa][indexs].Item1, transform[indexa][indexs].Item2));
+                        indexs++;
+                        currentStep++;
+                    }
+                    else
+                    {
+                        indexa++;
+                        indexs = 0;
+                    }
+                }
+                double nextSupport = 0.0;
+                int? besti = null;
+                for (int i = 0; i < nextTransforms.Count; i++)
+                {
+                    (Thought trigger, State nextState, double value) = nextTransforms[i];
+                    //this creates an approximation of breadth first search
+                    (Thought nt, double ns, int cs) = nextState.stsTransform.getBestThoughtInternal(maxTraversalSteps, currentStep + (int)((maxTraversalSteps - currentStep) * (nextTransforms.Count - i - 1) / nextTransforms.Count));
+                    currentStep = cs - (int)((maxTraversalSteps - currentStep) * (nextTransforms.Count - i - 1) / nextTransforms.Count);
+                    if (thought == null)
+                    {
+                        thought = trigger;
+                        support = value;
+                        nextSupport = ns;
+                        besti = i;
+                    }
+                    else if (value + ns > support + nextSupport)
+                    {
+                        thought = trigger;
+                        support = value;
+                        nextSupport = ns;
+                        besti = i;
+                    }
+                }
+                //push values backwords to show that a state's value is influenced by future states' values
+                if (besti != null)
+                {
+                    this.addTransform(thought, nextTransforms[besti.Value].Item2, 0.8 * (nextSupport - support));
+                }
+
+                return (thought, support + nextSupport, currentStep);
             }
         }
 
@@ -389,8 +627,7 @@ public partial class GameModel
         {
             this.mindID = mindID;
             this.characterID = characterID;
-            this.stamina = ((Character)entities[characterID]).stamina;
-            this.stateSpace = new StateSpace(((Character)entities[characterID]).visionRange, allThoughts);
+            this.stateSpace = new StateSpace(((Character)entities[characterID]).visionRange, allThoughts, characterID);
 
             if (actionThoughts.Count == 0)
             {
@@ -406,19 +643,24 @@ public partial class GameModel
             {
                 thoughtMemory[i] = new List<Thought>();
             }
+
+            stateMemory[0] = (stateSpace.getState(entities[this.characterID], foodMap, ((Character)entities[this.characterID]).stamina), new Thought());
+            this.previousPreference = stateMemory[0].Item1.preference;
+            this.previousStamina = ((Character)entities[this.characterID]).stamina;
         }
 
         public override CharacterAction getNextAction()
         {
             //handle state updates, careful with the order
-            staminaChange = ((Character)entities[characterID]).stamina - stamina;
-            stamina = ((Character)entities[characterID]).stamina;
-            State currentState = stateSpace.getState(entities[this.characterID], foodMap);
+            previousPreference = stateMemory[0].Item1.preference;
+            State currentState = stateSpace.getState(entities[this.characterID], foodMap, previousPreference);
+            preferenceChange = currentState.preference - previousPreference;
+            staminaChange = ((Character)entities[this.characterID]).stamina - previousStamina;
 
             //create staminaChange based memory associations
-            double ataImportanceFactor = 0.5;
-            double staImportanceFactor = 1;
-            double stsImportanceFactor = 0.01;
+            double ataImportanceFactor = 0.01;
+            double staImportanceFactor = 0.5;
+            //double stsImportanceFactor = 0.001;
             for (int i = 1; i < SML; i++)
             {
                 foreach (Thought t1 in thoughtMemory[i])
@@ -434,7 +676,8 @@ public partial class GameModel
                         }
                         else if (t1.rootState != null)
                         {
-                            t1.bump(t0, stsImportanceFactor * staminaChange * System.Math.Pow(0.5, (double)i - 1.0));
+                            //t1.bump(t0, stsImportanceFactor * preferenceChange * System.Math.Pow(0.5, (double)i - 1.0));
+                            t1.rootState.preference += 0.01 * t0.rootState.preference * System.Math.Pow(0.5, (double)i - 1.0);
                         }
                     }
                 }
@@ -452,7 +695,15 @@ public partial class GameModel
                     }
                 }
             }
-            
+
+            //this is where it looks into the future via StsTransforms
+            stateMemory[0].Item1.stsTransform.addTransform(stateMemory[0].Item2, currentState, staminaChange);
+            (Thought transformThought, double transformWeight) = currentState.stsTransform.getBestThought();
+            if (transformThought != null)
+            {
+                thoughtQueue.bump(transformThought, transformWeight);
+            }
+
             //advance thoughtMemory
             for (int i = SML - 1; i > 0; i--)
             {
@@ -460,14 +711,14 @@ public partial class GameModel
             }
             thoughtMemory[0] = new List<Thought>();
 
-            //run currentState's thoughts
+            //run currentState's thoughts, to add action thoughts to the main priority queue
             foreach (Thought thought in currentState.thoughts)
             {
                 runThought(thought);
             }
 
             //refill thought queue
-            thoughtQueue.bump(actionThoughts[rand.Next(actionThoughts.Count)], 0.1);
+            thoughtQueue.bump(actionThoughts[rand.Next(actionThoughts.Count)], 0.001);
 
             //set picked action
             GameModel.CharacterAction? pickedAction = null;
@@ -481,7 +732,7 @@ public partial class GameModel
                 lastThought = t;
             }
 
-            //add state to stateMemory  <-- currenntly unneeded >-<>-<>-<
+            //add state to stateMemory
             for (int i = SML - 1; i > 0; i--)
             {
                 stateMemory[i] = stateMemory[i - 1];
@@ -489,10 +740,11 @@ public partial class GameModel
             stateMemory[0] = (currentState, lastThought);
 
             //testing stuff
-            Debug.Log("Number of states: " + stateSpace.numberOfStates().ToString());
+            Debug.Log("Number of states, sections: " + stateSpace.numberOfStates().ToString() + ", " + stateSpace.numberOfSections().ToString());
 
             //decay anything left in the thought priority queue
             thoughtQueue.decay(QDECAY);
+            previousStamina = ((Character)entities[this.characterID]).stamina;
 
             //return picked action
             return (GameModel.CharacterAction)pickedAction;

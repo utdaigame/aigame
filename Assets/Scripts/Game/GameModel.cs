@@ -222,6 +222,7 @@ public partial class GameModel : MonoBehaviour
         public int mindID;
         //Stamina
         public double stamina;
+        public double minStamina;
         public double maxStamina;
         public double lowestStamina;
         //Senses
@@ -237,6 +238,7 @@ public partial class GameModel : MonoBehaviour
             this.mindID = mindID;
             this.name = "notaname";
             this.stamina = 50.0;
+            this.minStamina = -100.0;
             this.maxStamina = 100.0;
             this.lowestStamina = this.stamina;
             this.visionRange = 1.5;
@@ -253,6 +255,7 @@ public partial class GameModel : MonoBehaviour
             this.mindID = mindID;
             this.name = name;
             this.stamina = 50.0;
+            this.minStamina = -100.0;
             this.maxStamina = 100.0;
             this.lowestStamina = this.stamina;
             this.visionRange = 1.5;
@@ -261,7 +264,7 @@ public partial class GameModel : MonoBehaviour
             //for rendering
             actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
-        public Character(int x, int y, int id, int mindID, string name, double startingStamina, double maxStamina, double visionRange, CharacterAction[] actions)
+        public Character(int x, int y, int id, int mindID, string name, double startingStamina, double minStamina, double maxStamina, double visionRange, CharacterAction[] actions)
         {
             this.x = x;
             this.y = y;
@@ -269,6 +272,7 @@ public partial class GameModel : MonoBehaviour
             this.mindID = mindID;
             this.name = name;
             this.stamina = startingStamina;
+            this.minStamina = minStamina;
             this.maxStamina = maxStamina;
             this.lowestStamina = this.stamina;
             this.visionRange = visionRange;
@@ -280,7 +284,7 @@ public partial class GameModel : MonoBehaviour
 
         public void enforceMMStamina()
         {
-            if (stamina < 0.0) stamina = 0.0;
+            if (stamina < minStamina) stamina = minStamina;
             if (stamina > maxStamina) stamina = maxStamina;
 
             //update lowestStamina
@@ -377,6 +381,19 @@ public partial class GameModel : MonoBehaviour
         //entities.Insert(entityID, new Character(1, 1, entityID, mindID, name = "AIM2"));
         //minds.Insert(mindID, new AIMind1(mindID, entityID, ((Character)entities[entityID]).assignedActions));
         //characterMap[1, 1] = (Character)entities[entityID];
+
+        //spawn starting food
+        for (int i = 0; i < WIDTH * HEIGHT / 4; i++)
+        {
+            int nfx = rand.Next(WIDTH);
+            int nfy = rand.Next(HEIGHT);
+            if (foodMap[nfx, nfy] == null)
+            {
+                int foodID = generateNextID();
+                entities.Insert(foodID, new Food(nfx, nfy, foodID));
+                foodMap[nfx, nfy] = (Food)entities[foodID];
+            }
+        }
     }
 
     // FixedUpdate is called once per game frame
