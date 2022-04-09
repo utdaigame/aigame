@@ -590,7 +590,7 @@ public partial class GameModel
                     }
                 }
                 double nextSupport = 0.0;
-                int? besti = null;
+                //int? besti = null;
                 for (int i = 0; i < nextTransforms.Count; i++)
                 {
                     (Thought trigger, State nextState, double value) = nextTransforms[i];
@@ -602,21 +602,21 @@ public partial class GameModel
                         thought = trigger;
                         support = value;
                         nextSupport = ns;
-                        besti = i;
+                        //besti = i;
                     }
                     else if (value + ns > support + nextSupport)
                     {
                         thought = trigger;
                         support = value;
                         nextSupport = ns;
-                        besti = i;
+                        //besti = i;
                     }
                 }
                 //push values backwords to show that a state's value is influenced by future states' values
-                if (besti != null)
-                {
-                    this.addTransform(thought, nextTransforms[besti.Value].Item2, 0.8 * (nextSupport - support));
-                }
+                //if (besti != null)
+                //{
+                //    this.addTransform(thought, nextTransforms[besti.Value].Item2, 0.8 * (nextSupport - support));
+                //}
 
                 return (thought, support + nextSupport, currentStep);
             }
@@ -723,8 +723,10 @@ public partial class GameModel
             //set picked action
             GameModel.CharacterAction? pickedAction = null;
             Thought lastThought = null;
+            double weight = 0.0; // <-- testing
             while (pickedAction == null)
             {
+                weight = thoughtQueue.priority[0]; // <-- testing
                 //pop thought from thought queue
                 Thought t = thoughtQueue.pop();
                 //set picked action
@@ -740,6 +742,7 @@ public partial class GameModel
             stateMemory[0] = (currentState, lastThought);
 
             //testing stuff
+            Debug.Log("Weight of action thought: " + weight.ToString());
             Debug.Log("Number of states, sections: " + stateSpace.numberOfStates().ToString() + ", " + stateSpace.numberOfSections().ToString());
 
             //decay anything left in the thought priority queue
