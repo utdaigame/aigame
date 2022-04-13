@@ -50,6 +50,7 @@ public partial class GameModel : MonoBehaviour
             //MoveNorth
             (c)=>
             {
+                c.healthRegen();
                 c.stamina -= 0.1 + baseCost;
                 if (c.y < HEIGHT - 1 && characterMap[c.x, c.y + 1] == null)
                 {
@@ -59,6 +60,8 @@ public partial class GameModel : MonoBehaviour
                 }
                 else
                 {
+                    c.health -= 0.5;
+                    c.enforceMMHealth();
                     iMove[frameNumber % 1000] += 1;
                     iMoveNum++;
                 }
@@ -69,6 +72,7 @@ public partial class GameModel : MonoBehaviour
             //MoveSouth
             (c)=>
             {
+                c.healthRegen();
                 c.stamina -= 0.1 + baseCost;
                 if (c.y > 0 && characterMap[c.x, c.y - 1] == null)
                 {
@@ -78,6 +82,8 @@ public partial class GameModel : MonoBehaviour
                 }
                 else
                 {
+                    c.health -= 0.5;
+                    c.enforceMMHealth();
                     iMove[frameNumber % 1000] += 1;
                     iMoveNum++;
                 }
@@ -88,6 +94,7 @@ public partial class GameModel : MonoBehaviour
             //MoveEast
             (c)=>
             {
+                c.healthRegen();
                 c.stamina -= 0.1 + baseCost;
                 if (c.x < WIDTH - 1 && characterMap[c.x + 1, c.y] == null)
                 {
@@ -97,6 +104,8 @@ public partial class GameModel : MonoBehaviour
                 }
                 else
                 {
+                    c.health -= 0.5;
+                    c.enforceMMHealth();
                     iMove[frameNumber % 1000] += 1;
                     iMoveNum++;
                 }
@@ -107,6 +116,7 @@ public partial class GameModel : MonoBehaviour
             //MoveWest
             (c)=>
             {
+                c.healthRegen();
                 c.stamina -= 0.1 + baseCost;
                 if (c.x > 0 && characterMap[c.x - 1, c.y] == null)
                 {
@@ -116,6 +126,8 @@ public partial class GameModel : MonoBehaviour
                 }
                 else
                 {
+                    c.health -= 0.5;
+                    c.enforceMMHealth();
                     iMove[frameNumber % 1000] += 1;
                     iMoveNum++;
                 }
@@ -126,6 +138,7 @@ public partial class GameModel : MonoBehaviour
             //PickUp
             (c)=>
             {
+                c.healthRegen();
                 c.stamina -= 0.05 + baseCost;
                 if (foodMap[c.x, c.y] != null)
                 {
@@ -139,6 +152,8 @@ public partial class GameModel : MonoBehaviour
                 }
                 else
                 {
+                    c.health -= 0.5;
+                    c.enforceMMHealth();
                     iPickup[frameNumber % 1000] += 1;
                     iPickupNum++;
                 }
@@ -149,6 +164,8 @@ public partial class GameModel : MonoBehaviour
             //DoNothing
             (c)=>
             {
+                c.healthRegen();
+                c.healthRegen();
                 c.stamina -= baseCost;
                 c.enforceMMStamina();
             }
@@ -225,6 +242,11 @@ public partial class GameModel : MonoBehaviour
         public double minStamina;
         public double maxStamina;
         public double lowestStamina;
+        //health
+        public double health;
+        public double minHealth;
+        public double maxHealth;
+        public double lowestHealth;
         //Senses
         public double visionRange;
         //Actions
@@ -241,6 +263,10 @@ public partial class GameModel : MonoBehaviour
             this.minStamina = -100.0;
             this.maxStamina = 100.0;
             this.lowestStamina = this.stamina;
+            this.health = 10.0;
+            this.minHealth = 0.0;
+            this.maxHealth = 10.0;
+            this.lowestHealth = this.health;
             this.visionRange = 1.5;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
             this.tags = new List<string> { "Character" };
@@ -258,13 +284,18 @@ public partial class GameModel : MonoBehaviour
             this.minStamina = -100.0;
             this.maxStamina = 100.0;
             this.lowestStamina = this.stamina;
+            this.health = 10.0;
+            this.minHealth = 0.0;
+            this.maxHealth = 10.0;
+            this.lowestHealth = this.health;
             this.visionRange = 1.5;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
             this.tags = new List<string> { "Character" };
             //for rendering
             actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
-        public Character(int x, int y, int id, int mindID, string name, double startingStamina, double minStamina, double maxStamina, double visionRange, CharacterAction[] actions)
+        public Character(int x, int y, int id, int mindID, string name, double startingStamina, double minStamina, double maxStamina,
+            double startingHealth, double minHealth, double maxHealth, double visionRange, CharacterAction[] actions)
         {
             this.x = x;
             this.y = y;
@@ -275,6 +306,10 @@ public partial class GameModel : MonoBehaviour
             this.minStamina = minStamina;
             this.maxStamina = maxStamina;
             this.lowestStamina = this.stamina;
+            this.health = startingHealth;
+            this.minHealth = minHealth;
+            this.maxHealth = maxHealth;
+            this.lowestHealth = this.health;
             this.visionRange = visionRange;
             this.assignedActions = actions;
             this.tags = new List<string> { "Character" };
@@ -289,6 +324,21 @@ public partial class GameModel : MonoBehaviour
 
             //update lowestStamina
             if (stamina < lowestStamina) lowestStamina = stamina;
+        }
+
+        public void enforceMMHealth()
+        {
+            if (health < minHealth) health = minHealth;
+            if (health > maxHealth) health = maxHealth;
+
+            //update lowestHealth
+            if (health < lowestHealth) lowestHealth = health;
+        }
+
+        public void healthRegen()
+        {
+            health += 0.1;
+            enforceMMHealth();
         }
     }
     public abstract class AIMind
@@ -424,6 +474,8 @@ public partial class GameModel : MonoBehaviour
                 {
                     Debug.Log("Stamina: " + ((Character) entity).stamina.ToString());
                     Debug.Log("Lowest Stamina: " + ((Character) entity).lowestStamina.ToString());
+                    Debug.Log("Health: " + ((Character)entity).health.ToString());
+                    Debug.Log("Lowest Health: " + ((Character)entity).lowestHealth.ToString());
                     CharacterAction pickedAction = minds[((Character)entity).mindID].getNextAction();
                     //Debug.Log(pickedAction.ToString());
                     Action<Character> action = actions[(int)pickedAction];
