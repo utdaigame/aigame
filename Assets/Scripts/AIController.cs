@@ -115,27 +115,31 @@ namespace StarterAssets
 			GroundedCheck();
 
 			var currentPosition = new Vector2(transform.position.x, transform.position.z);
+			var epsilon = 0.1;
 
-			if (destination.x < currentPosition.x)
+			if (destination.x < currentPosition.x && destination.x+epsilon < currentPosition.x)
 			{
 				//return CharacterAction.MoveWest;
 				_input.MoveInput(Vector2.left);
 			}
-			else if (destination.y < currentPosition.y)
+			else if (destination.y < currentPosition.y && destination.y+epsilon < currentPosition.y)
 			{
 				//return CharacterAction.MoveSouth;
 				_input.MoveInput(Vector2.down);
 			}
-			else if (destination.x > currentPosition.x)
+			else if (destination.x > currentPosition.x && destination.x-epsilon > currentPosition.x)
 			{
 				//return CharacterAction.MoveEast;
 				_input.MoveInput(Vector2.right);
 			}
-			else if (destination.y > currentPosition.y)
+			else if (destination.y > currentPosition.y && destination.y-epsilon > currentPosition.y)
 			{
 				//return CharacterAction.MoveNorth;
 				_input.MoveInput(Vector2.up);
-			}
+			} else
+			{
+				_input.MoveInput(Vector2.zero);
+            }
 
 
 		    Move();
