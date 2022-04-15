@@ -346,8 +346,8 @@ public partial class GameModel
                 int currentCount = allStates.Count;
                 return newState;
             }
-
-            //currently unused
+            
+            /*currently unused
             public State getOverlapState(State state1, State state2)
             {
                 List<int> listState = new List<int>();
@@ -401,6 +401,7 @@ public partial class GameModel
                 allStates.Add(newState);
                 return newState;
             }
+            */
 
             private void enforceSectionSize(int sectionNum)
             {
@@ -531,7 +532,7 @@ public partial class GameModel
                 this.triggers = new List<Thought>();
             }
 
-            public void addTransform(Thought triggerThought, State triggeredState, double value)
+            public void addTransform(Thought triggerThought, State triggeredState, double staminaChange, double[] inputChanges)
             {
                 int indexa = triggers.IndexOf(triggerThought);
                 if (indexa == -1)
@@ -548,7 +549,16 @@ public partial class GameModel
                     indexs = stateList.Count;
                     stateList.Add((triggeredState, 0.0));
                 }
-                stateList[indexs] = (stateList[indexs].Item1, stateList[indexs].Item2 + value);
+
+                //for generalized inputs
+                double totalChange = 0.0;
+                for (int ind = 0; ind < inputChanges.Length; ind++)
+                {
+                    totalChange += inputChanges[ind];
+                }
+                //stateList[indexs] = (stateList[indexs].Item1, stateList[indexs].Item2 + totalChange);
+
+                stateList[indexs] = (stateList[indexs].Item1, stateList[indexs].Item2 + staminaChange);
             }
 
             private static int indexOfStatePair(List<(State, double)> stateList, State state)
@@ -738,7 +748,7 @@ public partial class GameModel
             }
 
             //this is where it looks into the future via StsTransforms
-            stateMemory[0].Item1.stsTransform.addTransform(stateMemory[0].Item2, currentState, staminaChange);
+            stateMemory[0].Item1.stsTransform.addTransform(stateMemory[0].Item2, currentState, staminaChange, inputChanges);
             (Thought transformThought, double transformWeight) = currentState.stsTransform.getBestThought();
             if (transformThought != null)
             {
