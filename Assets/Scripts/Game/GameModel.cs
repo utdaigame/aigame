@@ -247,6 +247,8 @@ public partial class GameModel : MonoBehaviour
         public double minHealth;
         public double maxHealth;
         public double lowestHealth;
+        //stat array
+        public double[] statArray;
         //Senses
         public double visionRange;
         //Actions
@@ -270,6 +272,9 @@ public partial class GameModel : MonoBehaviour
             this.visionRange = 1.5;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
             this.tags = new List<string> { "Character" };
+            this.statArray = new double[] {this.stamina, this.health};
+            
+            
             //for rendering
             actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
@@ -291,6 +296,8 @@ public partial class GameModel : MonoBehaviour
             this.visionRange = 1.5;
             this.assignedActions = new CharacterAction[] { CharacterAction.DoNothing, CharacterAction.MoveEast, CharacterAction.MoveNorth, CharacterAction.MoveSouth, CharacterAction.MoveWest, CharacterAction.PickUp };
             this.tags = new List<string> { "Character" };
+            this.statArray = new double[] { this.stamina, this.health };
+
             //for rendering
             actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
@@ -317,6 +324,13 @@ public partial class GameModel : MonoBehaviour
             actionList.Add(new RenderActionPair(id, RenderAction.Add));
         }
 
+        public void statArrayUpdate()
+        {
+            this.statArray[0] = stamina;
+            this.statArray[1] = health;
+
+        }
+
         public void enforceMMStamina()
         {
             if (stamina < minStamina) stamina = minStamina;
@@ -324,6 +338,9 @@ public partial class GameModel : MonoBehaviour
 
             //update lowestStamina
             if (stamina < lowestStamina) lowestStamina = stamina;
+
+            statArrayUpdate();
+
         }
 
         public void enforceMMHealth()
@@ -333,6 +350,9 @@ public partial class GameModel : MonoBehaviour
 
             //update lowestHealth
             if (health < lowestHealth) lowestHealth = health;
+
+            statArrayUpdate();
+
         }
 
         public void healthRegen()
