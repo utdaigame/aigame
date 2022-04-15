@@ -422,8 +422,8 @@ public partial class GameModel : MonoBehaviour
 
         int firstEntityID = generateNextID();
         int firstMindID = generateNextMindID();
-        entities.Insert(firstEntityID, new Character(WIDTH / 2, HEIGHT / 2, firstEntityID, firstMindID, name = "AIM2"));
-        minds.Insert(firstMindID, new AIMind2(firstMindID, firstEntityID, ((Character) entities[firstEntityID]).assignedActions));
+        entities.Insert(firstEntityID, new Character(WIDTH / 2, HEIGHT / 2, firstEntityID, firstMindID, name = "AIM3"));
+        minds.Insert(firstMindID, new AIMind3(firstMindID, firstEntityID, ((Character) entities[firstEntityID]).assignedActions));
         characterMap[WIDTH / 2, HEIGHT / 2] = (Character) entities[firstEntityID];
 
         //int entityID = generateNextID();

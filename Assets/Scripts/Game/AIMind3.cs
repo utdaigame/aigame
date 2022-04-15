@@ -32,6 +32,11 @@ public partial class GameModel
         //state space
         private StateSpace stateSpace;
 
+        //input connections, use this for things like stamina and health access
+        double[] inputs;
+        double[] previousInputs;
+        double[] inputChanges;
+
 
         //thoughts
         private class Thought
@@ -647,6 +652,16 @@ public partial class GameModel
             stateMemory[0] = (stateSpace.getState(entities[this.characterID], foodMap, ((Character)entities[this.characterID]).stamina), new Thought());
             this.previousPreference = stateMemory[0].Item1.preference;
             this.previousStamina = ((Character)entities[this.characterID]).stamina;
+
+            //for generalized inputs
+            this.inputs = ((Character)entities[characterID]).statArray;
+            this.previousInputs = new double[inputs.Length];
+            this.inputChanges = new double[inputs.Length];
+            for (int ind = 0; ind < inputs.Length; ind++)
+            {
+                previousInputs[ind] = inputs[ind];
+                inputChanges[ind] = 0.0;
+            }
         }
 
         public override CharacterAction getNextAction()
@@ -656,6 +671,16 @@ public partial class GameModel
             State currentState = stateSpace.getState(entities[this.characterID], foodMap, previousPreference);
             preferenceChange = currentState.preference - previousPreference;
             staminaChange = ((Character)entities[this.characterID]).stamina - previousStamina;
+
+            //for generalized inputs
+            double[] ataImportanceFactors = new double[inputs.Length];
+            double[] staImportanceFactors = new double[inputs.Length];
+            for (int ind = 0; ind < inputs.Length; ind++)
+            {
+                inputChanges[ind] = inputs[ind] - previousInputs[ind];
+                ataImportanceFactors[ind] = 0.01;
+                staImportanceFactors[ind] = 0.5;
+            }
 
             //create staminaChange based memory associations
             double ataImportanceFactor = 0.01;
@@ -672,6 +697,14 @@ public partial class GameModel
                             if (t1.rootState == null)
                             {
                                 t1.bump(t0, ataImportanceFactor * staminaChange * System.Math.Pow(0.5, (double)i - 1.0));
+
+                                //for generalized inputs
+                                double totalBumpValue = 0.0;
+                                for (int ind = 0; ind < inputs.Length; ind++)
+                                {
+                                    totalBumpValue += ataImportanceFactors[ind] * inputChanges[ind];
+                                }
+                                //t1.bump(t0, totalBumpValue * System.Math.Pow(0.5, (double)i - 1.0));
                             }
                         }
                         else if (t1.rootState != null)
@@ -691,6 +724,14 @@ public partial class GameModel
                         if (t1.rootState != null && t2.rootState == null)
                         {
                             t1.bump(t2, staImportanceFactor * staminaChange * System.Math.Pow(0.5, (double)i - 1.0));
+
+                            //for generalized inputs
+                            double totalBumpValue = 0.0;
+                            for (int ind = 0; ind < inputs.Length; ind++)
+                            {
+                                totalBumpValue += staImportanceFactors[ind] * inputChanges[ind];
+                            }
+                            t1.bump(t2, totalBumpValue * System.Math.Pow(0.5, (double)i - 1.0));
                         }
                     }
                 }
@@ -748,6 +789,12 @@ public partial class GameModel
             //decay anything left in the thought priority queue
             thoughtQueue.decay(QDECAY);
             previousStamina = ((Character)entities[this.characterID]).stamina;
+
+            //for generalized inputs
+            for (int ind = 0; ind < inputs.Length; ind++)
+            {
+                previousInputs[ind] = inputs[ind];
+            }
 
             //return picked action
             return (GameModel.CharacterAction)pickedAction;
